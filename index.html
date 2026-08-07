@@ -5,18 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Overlay Antrean 1v1</title>
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;background:transparent;color:#fff;font-family:Arial,sans-serif}
-  .wrap{display:inline-block;padding:12px 16px;background:rgba(0,0,0,.55);border-radius:10px}
-  .line{font-size:26px;font-weight:700;line-height:1.35;white-space:nowrap}
-  .label{color:#fff}
-  .num{color:#ffe66d}
-  .panel{display:none;position:fixed;left:12px;bottom:12px;background:#171717;color:#fff;padding:14px;border-radius:12px;font-size:16px}
-  .panel button{font-size:22px;min-width:48px;margin:4px;border:0;border-radius:8px;padding:7px 12px}
-  .panel input{width:70px;font-size:22px;text-align:center;border-radius:7px;border:0;padding:5px}
-  .help{opacity:.75;font-size:12px;margin-top:8px}
-  body.control .panel{display:block}
-  body.control .wrap{margin-top:12px}
+*{box-sizing:border-box}
+body{margin:0;background:transparent;color:#fff;font-family:Arial,sans-serif}
+.wrap{display:inline-block;padding:12px 16px;background:rgba(0,0,0,.55);border-radius:10px}
+.line{font-size:26px;font-weight:700;line-height:1.35;white-space:nowrap}
+.num{color:#ffe66d}
+.panel{display:none;position:fixed;left:12px;bottom:12px;background:#171717;color:#fff;padding:14px;border-radius:12px;font-size:16px}
+.panel button{font-size:22px;min-width:48px;margin:4px;border:0;border-radius:8px;padding:7px 12px}
+.panel input{width:70px;font-size:22px;text-align:center;border-radius:7px;border:0;padding:5px}
+.help{opacity:.75;font-size:12px;margin-top:8px}
+body.control .panel{display:block}
 </style>
 </head>
 <body>
@@ -35,27 +33,30 @@
   <button onclick="change('skip',-1)">−</button>
   <input id="skipInput" value="0" inputmode="numeric">
   <button onclick="change('skip',1)">+</button>
-  <div class="help">Keyboard: F = follow +1, Shift+F = follow −1, S = skip +1, Shift+S = skip −1, R = reset. Tambahkan ?control pada URL untuk membuka panel.</div>
+  <div class="help">NUMPAD: + = Follow +1, − = Follow −1, * = Skip +1, / = Skip −1, 0 = reset.</div>
 </div>
 
 <script>
 const KEY='queue_1v1_overlay';
 let state=JSON.parse(localStorage.getItem(KEY)||'{"follow":0,"skip":0}');
-function save(){localStorage.setItem(KEY,JSON.stringify(state)); render();}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
 function render(){
   for(const k of ['follow','skip']){
     document.getElementById(k).textContent=state[k];
     document.getElementById(k+'Input').value=state[k];
   }
 }
-function change(k,n){state[k]=Math.max(0,state[k]+n);save();}
-document.getElementById('followInput').onchange=e=>{state.follow=Math.max(0,+e.target.value||0);save()};
-document.getElementById('skipInput').onchange=e=>{state.skip=Math.max(0,+e.target.value||0);save()};
+function change(k,n){state[k]=Math.max(0,state[k]+n);save()}
+document.getElementById('followInput').onchange=e=>{state.follow=Math.max(0,+e.target.value||0);save()}
+document.getElementById('skipInput').onchange=e=>{state.skip=Math.max(0,+e.target.value||0);save()}
+
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT') return;
-  if(e.key.toLowerCase()==='f') change('follow',e.shiftKey?-1:1);
-  if(e.key.toLowerCase()==='s') change('skip',e.shiftKey?-1:1);
-  if(e.key.toLowerCase()==='r'){state={follow:0,skip:0};save();}
+  if(e.code==='NumpadAdd') change('follow',1);
+  if(e.code==='NumpadSubtract') change('follow',-1);
+  if(e.code==='NumpadMultiply') change('skip',1);
+  if(e.code==='NumpadDivide') change('skip',-1);
+  if(e.code==='Numpad0'){state={follow:0,skip:0};save()}
 });
 if(new URLSearchParams(location.search).has('control')) document.body.classList.add('control');
 render();
