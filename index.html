@@ -1,14 +1,8 @@
 <!doctype html>
 
-<html lang="id">
-<head>
+<html lang="id"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Antrean 1v1</title><style>
-:root{
-  --yellow:#ffe66d;
-  --green:#57e889;
-  --red:#ff5b5b;
-}
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Text Editor</title><style>
 
 *{
   box-sizing:border-box;
@@ -32,120 +26,73 @@ body.live{
   overflow:hidden;
 }
 
-.overlay{
+/* =========================
+   EDITOR
+========================= */
+
+.editor{
   display:inline-block;
+
   max-width:100vw;
-  padding:clamp(7px,1vw,12px) clamp(9px,1.6vw,16px);
-  border-radius:clamp(5px,1vw,11px);
-  background:rgba(0,0,0,.58);
+
+  min-width:30px;
+
+  padding:clamp(7px,1vw,12px)
+          clamp(9px,1.6vw,16px);
+
+  background:transparent;
+
+  font-size:clamp(13px,2.5vw,30px);
+
   font-weight:800;
   line-height:1.2;
-  overflow:hidden;
+
+  color:#fff;
+
+  outline:none;
+
+  white-space:pre-wrap;
+  word-break:break-word;
+
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+    -2px  0 0 #000,
+     2px  0 0 #000,
+     0  -2px 0 #000,
+     0   2px 0 #000;
+}
+
+/* =========================
+   PLACEHOLDER
+========================= */
+
+.editor:empty::before{
+  content:"text anda";
+  color:#fff;
+}
+
+/* =========================
+   LIVE MODE
+========================= */
+
+body.live .editor{
+  cursor:default;
   user-select:none;
 }
 
-.row{
-  font-size:clamp(13px,2.5vw,30px);
-  white-space:nowrap;
-}
+</style></head><body><div
+  class="editor"
+  id="editor"
+  contenteditable="true"
+  spellcheck="false"
+></div><script type="module">
 
-/* TEKS FOLLOW / ANTRIAN */
-.label{
-  cursor:pointer;
-}
-
-/* ANGKA */
-.num{
-  color:var(--yellow);
-  display:inline-block;
-  min-width:1.4ch;
-  text-align:center;
-  cursor:pointer;
-}
-
-/* OPEN / CLOSED */
-.status{
-  margin-top:4px;
-  font-size:clamp(10px,1.6vw,20px);
-  color:var(--green);
-  cursor:pointer;
-  white-space:nowrap;
-}
-
-/* DONATE */
-.donate{
-  margin-top:5px;
-  font-size:clamp(9px,1.4vw,17px);
-  color:#fff;
-  opacity:.8;
-  white-space:nowrap;
-}
-
-/* SAAT CLOSED */
-.closed .queue{
-  display:none;
-}
-
-.closed .closemsg{
-  display:block;
-}
-
-.closemsg{
-  display:none;
-  color:#fff;
-  font-size:clamp(16px,3vw,32px);
-  white-space:nowrap;
-}
-
-.closed .status{
-  color:var(--red);
-}
-
-.closed .donate{
-  display:none;
-}
-</style></head><body><div class="overlay" id="overlay">  <!-- ANTREAN -->  <div class="queue"><div class="row">
-
-  <span
-    class="label"
-    id="followLabel">
-    1V1 HV FREE | FOLLOW
-  </span>
-
-  (<span
-    id="follow"
-    class="num">
-    0
-  </span>)
-
-</div>
-
-
-<div class="row">
-
-  <span
-    class="label"
-    id="skipLabel">
-    SKIP 1K | ANTRIAN
-  </span>
-
-  (<span
-    id="skip"
-    class="num">
-    0
-  </span>)
-
-</div>
-
-  </div>  <!-- SAAT CLOSED -->  <div class="closemsg">
-    ISTIRAHAT DULU!!
-  </div>  <!-- STATUS -->  <div
-    class="status"
-    id="status">
-    ● OPEN
-  </div>  <!-- DONATE -->  <div class="donate">
-    DONATE DI BIO
-  </div></div><script type="module">
+/* =========================
+   FIREBASE IMPORT
+========================= */
 
 import {initializeApp}
 from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
@@ -160,7 +107,7 @@ from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
 
 /* =========================
-   FIREBASE
+   FIREBASE CONFIG
 ========================= */
 
 const firebaseConfig = {
@@ -188,15 +135,30 @@ const firebaseConfig = {
 
   measurementId:
   "G-7VHCXMCZZJ"
+
 };
 
 
-const app = initializeApp(firebaseConfig);
+/* =========================
+   FIREBASE INIT
+========================= */
 
-const db = getDatabase(app);
+const app =
+  initializeApp(firebaseConfig);
 
-const stateRef =
-  ref(db,"antrean1v1/state");
+const db =
+  getDatabase(app);
+
+
+/* =========================
+   TEXT DATABASE
+========================= */
+
+const textRef =
+  ref(
+    db,
+    "textEditor/text"
+  );
 
 
 /* =========================
@@ -204,248 +166,117 @@ const stateRef =
 ========================= */
 
 const params =
-  new URLSearchParams(location.search);
+  new URLSearchParams(
+    location.search
+  );
 
 const isLive =
   params.has("live");
 
+
 if(isLive){
 
-  document.body.className="live";
+  document.body.className = "live";
 
 }
 
 
 /* =========================
-   STATE
+   EDITOR
 ========================= */
 
-let state = {
-  follow:0,
-  skip:0,
-  open:true
-};
+const editor =
+  document.getElementById("editor");
 
 
 /* =========================
-   RENDER
-========================= */
-
-function render(data){
-
-  state = {
-
-    follow:
-      Math.max(
-        0,
-        Number(data?.follow)||0
-      ),
-
-    skip:
-      Math.max(
-        0,
-        Number(data?.skip)||0
-      ),
-
-    open:
-      data?.open !== false
-
-  };
-
-
-  document.getElementById("follow")
-    .textContent=state.follow;
-
-  document.getElementById("skip")
-    .textContent=state.skip;
-
-
-  const overlay =
-    document.getElementById("overlay");
-
-
-  overlay.classList.toggle(
-    "closed",
-    !state.open
-  );
-
-
-  document.getElementById("status")
-    .textContent =
-      state.open
-      ? "● OPEN"
-      : "● CLOSED";
-
-
-  document.title =
-    state.open
-    ? "🟢 LIVE — Antrean 1v1"
-    : "🔴 CLOSED — Antrean 1v1";
-
-}
-
-
-/* =========================
-   FIREBASE REALTIME
+   LOAD TEXT
 ========================= */
 
 onValue(
-  stateRef,
-  snapshot=>{
 
-    render(
-      snapshot.val() || {
-        follow:0,
-        skip:0,
-        open:true
-      }
-    );
+  textRef,
+
+  snapshot => {
+
+    const text =
+      snapshot.val();
+
+    /*
+      Hanya update kalau
+      berbeda dengan isi editor.
+    */
+
+    if(
+      text !== null &&
+      text !== editor.innerText
+    ){
+
+      editor.innerText =
+        text;
+
+    }
+
+  }
+
+);
+
+
+/* =========================
+   SAVE TEXT
+========================= */
+
+let saveTimer;
+
+editor.addEventListener(
+  "input",
+  function(){
+
+    clearTimeout(saveTimer);
+
+    saveTimer =
+      setTimeout(
+        async function(){
+
+          try{
+
+            await set(
+              textRef,
+              editor.innerText
+            );
+
+          }catch(error){
+
+            console.error(
+              "Firebase error:",
+              error
+            );
+
+          }
+
+        },
+        150
+      );
 
   }
 );
 
 
 /* =========================
-   SIMPAN DATA
+   LIVE MODE
 ========================= */
 
-async function save(data){
+if(isLive){
 
-  try{
+  /*
+    Tidak bisa diedit
+    saat ?live
+  */
 
-    await set(
-      stateRef,
-      data
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-  }
+  editor.contentEditable =
+    "false";
 
 }
-
-
-/* =========================
-   ANGKA = TAMBAH
-========================= */
-
-document
-.getElementById("follow")
-.addEventListener(
-  "click",
-  function(){
-
-    if(!state.open)return;
-
-    save({
-
-      ...state,
-
-      follow:
-        state.follow + 1
-
-    });
-
-  }
-);
-
-
-document
-.getElementById("skip")
-.addEventListener(
-  "click",
-  function(){
-
-    if(!state.open)return;
-
-    save({
-
-      ...state,
-
-      skip:
-        state.skip + 1
-
-    });
-
-  }
-);
-
-
-/* =========================
-   TEKS = KURANG
-========================= */
-
-document
-.getElementById("followLabel")
-.addEventListener(
-  "click",
-  function(){
-
-    if(!state.open)return;
-
-    save({
-
-      ...state,
-
-      follow:
-        Math.max(
-          0,
-          state.follow - 1
-        )
-
-    });
-
-  }
-);
-
-
-document
-.getElementById("skipLabel")
-.addEventListener(
-  "click",
-  function(){
-
-    if(!state.open)return;
-
-    save({
-
-      ...state,
-
-      skip:
-        Math.max(
-          0,
-          state.skip - 1
-        )
-
-    });
-
-  }
-);
-
-
-/* =========================
-   OPEN / CLOSED
-========================= */
-
-document
-.getElementById("status")
-.addEventListener(
-  "click",
-  function(){
-
-    save({
-
-      ...state,
-
-      open:
-        !state.open
-
-    });
-
-  }
-);
 
 </script></body>
 </html>
